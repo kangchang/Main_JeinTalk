@@ -1,10 +1,10 @@
-package test;
+package client;
 
 import java.io.Serializable;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
-public class USER implements Serializable{
+public class User implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private String message ="";
 	private String name="";
@@ -28,7 +28,6 @@ public class USER implements Serializable{
 		LocalTime now = LocalTime.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("a K:mm:ss");
 		String formateNow = now.format(formatter);
-//		return  this.name + " : " + this.message + "            (" +formateNow + ")";
 		return  "(" +formateNow + ") " + this.name + " : " + this.message;
 	}
 }

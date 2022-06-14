@@ -1,12 +1,4 @@
-package test;
-
-import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.SwingConstants;
-
-import db.DBConnection;
+package client;
 
 import java.awt.Font;
 import java.sql.Connection;
@@ -15,6 +7,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
+
+import db.ConnectionPool;
 
 public class FindInfoId {
 
@@ -22,45 +19,44 @@ public class FindInfoId {
 	private String userName;
 	private String mail;
 	private String id = "";
+	private ConnectionPool cp;
 
-	public FindInfoId(String userName, String mail) {
-			
+	public FindInfoId(String userName, String mail, ConnectionPool cp) {
 		this.userName = userName;
 		this.mail = mail;
+		this.cp = cp;
 		
-		DBConnection dbcon = new DBConnection();
-		Connection con = dbcon.getConnection();
-		PreparedStatement prstmt = null;
-		
-		
+		Connection conn = null;
+		PreparedStatement pstmt = null;
 		StringBuffer sql = new StringBuffer();
-		sql.append("SELECT id FROM user WHERE username=? AND email=?");
+		ResultSet result = null;
+		
 		try {
+			conn = cp.getConnection();
 			
-			prstmt = con.prepareStatement(sql.toString());
-			prstmt.setString(1, userName);
-			prstmt.setString(2, mail);
+			sql.append("SELECT id FROM user WHERE username=? AND email=?");
 			
-			ResultSet result = prstmt.executeQuery();
+			pstmt = conn.prepareStatement(sql.toString());
+			pstmt.setString(1, userName);
+			pstmt.setString(2, mail);
+			result = pstmt.executeQuery();
 			while(result.next()) {
 				this.id = result.getString("id");
 			}
-			System.out.println(id);
+			
 		} catch (SQLException e) {
 			e.printStackTrace();
-		}
-		try {
-			prstmt.close();
-			con.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
+		} finally {
+			try {
+				cp.releaseConnection(conn);
+				pstmt.close();
+				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 		initialize();
 	}
-
-	/**
-	 * Initialize the contents of the frame.
-	 */
 	private void initialize() {
 		frame = new JFrame();
 		frame.setBounds(100, 100, 359, 215);

@@ -1,15 +1,11 @@
-package test;
+package client;
 
 import java.awt.Color;
-import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.net.Socket;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -20,13 +16,10 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPasswordField;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
 
-import db.DBConnection;
+import db.ConnectionPool;
 
 public class Client {
 
@@ -40,16 +33,14 @@ public class Client {
 
 	private static SimpleDateFormat date = new SimpleDateFormat("yyyy년 MM월 dd일 HH시 mm분 ss초");
 	private static String loginDate = date.format(System.currentTimeMillis());
+	
 
-	static DBConnection dbconn = new DBConnection();
-	static Connection conn = dbconn.getConnection();
-	static PreparedStatement pstmt = null;
-	static StringBuffer sql = new StringBuffer();
-	static ResultSet result;
-
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
+		ConnectionPool cp = ConnectionPool.getInstance("jdbc:mariadb://192.168.0.211:3306/jeintalk", "root", "root", 5, 10);
+		
+		
 		// =====================================Swing=====================================
-
+		
 		frame = new JFrame("JeinTalk");
 		frame.setBounds(120, 120, 500, 400);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -120,6 +111,11 @@ public class Client {
 		
 
 		textField_1.addKeyListener(new KeyAdapter() {
+			Connection conn = cp.getConnection();
+			PreparedStatement pstmt = null;
+			StringBuffer sql = new StringBuffer();
+			ResultSet result = null;
+			
 			@Override
 			public void keyPressed(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
@@ -145,16 +141,18 @@ public class Client {
 									getPwFromDb = result.getString("pw");
 									getUserNameFromeDb = result.getString("username");
 								}
-								// flag 1만들기 (온라인)
-								sql.setLength(0);
-								sql.append("UPDATE user SET flag=1 WHERE id=?");
-								pstmt = conn.prepareStatement(sql.toString());
-								pstmt.setString(1, getIdFromDb);
-								pstmt.executeUpdate();
-
+								
 								if (textField.getText().equals(getIdFromDb)
 										&& textField_1.getText().equals(getPwFromDb)) {
-									ChatRoom chatroom = new ChatRoom(getIdFromDb, getUserNameFromeDb, loginDate, ip, port);
+									ChatRoom chatroom = new ChatRoom(getIdFromDb, getUserNameFromeDb, loginDate, ip, port, cp);
+									
+									// flag 1만들기 (온라인)
+									sql.setLength(0);
+									sql.append("UPDATE user SET flag=1 WHERE id=?");
+									pstmt = conn.prepareStatement(sql.toString());
+									pstmt.setString(1, getIdFromDb);
+									pstmt.executeUpdate();
+									
 									chatroom.runChatRoom();
 									frame.setVisible(false);
 								} else {
@@ -164,7 +162,14 @@ public class Client {
 							} catch (Exception e1) {
 								e1.printStackTrace();
 							} finally {
-
+								//connection 반환
+								try {
+									cp.releaseConnection(conn);
+									pstmt.close();
+									result.close();
+								} catch (SQLException e1) {
+									e1.printStackTrace();
+								}
 							}
 							e.consume();
 						}
@@ -177,7 +182,7 @@ public class Client {
 		
 
 		alertMessage = new JLabel();
-		alertMessage.setBounds(190, 156, 180, 21);
+		alertMessage.setBounds(190, 205, 180, 21);
 		alertMessage.setForeground(Color.red);
 		frame.getContentPane().add(alertMessage);
 		alertMessage.revalidate();
@@ -207,59 +212,80 @@ public class Client {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				SignUp Sign = new SignUp();
-				Sign.Singup();
+				Sign.Singup(cp);
 			}
 		});
 
 		// 회원정보찾기
 		btnIdPassFind.addActionListener(event -> {
-			new FindInfo();
+			new FindInfo(cp);
 		});
 
 		// 로그인성공시
 		btnLogin.addActionListener(new ActionListener() {
+			Connection conn = cp.getConnection();
+			PreparedStatement pstmt = null;
+			StringBuffer sql = new StringBuffer();
+			ResultSet result = null;
+			
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
+					
 					// 로그인 확인
 					String ip = textField_2.getText();
 					int port = Integer.parseInt(textField_3.getText());
 					
 					sql.setLength(0);
-					sql.append("SELECT id, pw, username FROM user WHERE id=?");
+					sql.append("SELECT id, pw, username, flag FROM user WHERE id=?");
 					pstmt = conn.prepareStatement(sql.toString());
 					pstmt.setString(1, textField.getText());
 					result = pstmt.executeQuery();
 					String getIdFromDb = null;
 					String getPwFromDb = null;
 					String getUserNameFromeDb = null;
+					int getFlagFromDb = 0;
 					while (result.next()) {
 						getIdFromDb = result.getString("id");
 						getPwFromDb = result.getString("pw");
 						getUserNameFromeDb = result.getString("username");
+						getFlagFromDb = result.getInt("flag");
 					}
-					// flag 1만들기 (온라인)
-					sql.setLength(0);
-					sql.append("UPDATE user SET flag=1 WHERE id=?");
-					pstmt = conn.prepareStatement(sql.toString());
-					pstmt.setString(1, getIdFromDb);
-					result = pstmt.executeQuery();
-
-					if (textField.getText().equals(getIdFromDb) && textField_1.getText().equals(getPwFromDb)) {
-						ChatRoom chatroom = new ChatRoom(getIdFromDb, getUserNameFromeDb, loginDate, ip, port);
-						chatroom.runChatRoom();
-						frame.setVisible(false);
-					} else {
-						alertMessage.setText("ID및 Password를 확인해주세요.");
+					if(getFlagFromDb == 0) {
+						// flag 1만들기 (온라인)
+						sql.setLength(0);
+						sql.append("UPDATE user SET flag=1 WHERE id=?");
+						pstmt = conn.prepareStatement(sql.toString());
+						pstmt.setString(1, getIdFromDb);
+						pstmt.executeUpdate();
+						
+						if (textField.getText().equals(getIdFromDb) && textField_1.getText().equals(getPwFromDb)) {
+							ChatRoom chatroom = new ChatRoom(getIdFromDb, getUserNameFromeDb, loginDate, ip, port, cp);
+							chatroom.runChatRoom();
+							alertMessage.setText("");
+							frame.setVisible(false);
+							
+						} else {
+							alertMessage.setText("ID및 Password를 확인해주세요.");
+						}
+					}else {
+						alertMessage.setText("이미 로그인 된 계정입니다.");
 					}
 
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				} finally {
-
+					//connection 반환
+					try {
+						cp.releaseConnection(conn);
+						pstmt.close();
+						result.close();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
-
+			
 		});
 		// =====================================Swing=====================================
 	}

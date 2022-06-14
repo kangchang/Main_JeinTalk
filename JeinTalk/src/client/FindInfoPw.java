@@ -1,20 +1,18 @@
-package test;
+package client;
 
-import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JTextField;
-
-import db.DBConnection;
-
-import javax.swing.JLabel;
 import java.awt.Font;
-import javax.swing.JButton;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.awt.event.ActionEvent;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
+
+import db.ConnectionPool;
 
 public class FindInfoPw {
 
@@ -25,18 +23,16 @@ public class FindInfoPw {
 	private String id;
 	private String userName;
 	private String mail;
+	private ConnectionPool cp;
 	
-	public FindInfoPw(String id, String userName, String mail) {
+	public FindInfoPw(String id, String userName, String mail, ConnectionPool cp) {
 		this.id = id;
 		this.userName = userName;
 		this.mail = mail;
+		this.cp = cp;
 		
 		initialize();
 	}
-
-	/**
-	 * Initialize the contents of the frame.
-	 */
 	private void initialize() {
 		frame = new JFrame();
 		frame.setBounds(100, 100, 332, 269);
@@ -73,33 +69,38 @@ public class FindInfoPw {
 		
 		//이벤트 등록
 		btnButton.addActionListener(event->{
+			Connection conn = null;
+			PreparedStatement pstmt = null;
+			StringBuffer sql = null;
+			sql = new StringBuffer();
+			int result;
 			//입력한 비밀번호가 같으면 비밀번호 변경
 			if(textPw1.getText().equals(textPw2.getText())) {
-				
-				DBConnection dbcon = new DBConnection();
-				Connection con = dbcon.getConnection();
-				PreparedStatement prestmt = null;
-				
-				StringBuffer sql = new StringBuffer();
-				sql.append("UPDATE user SET pw=? where id=? and username=? and email=?");
-				
 				try {
-					prestmt = con.prepareStatement(sql.toString());
-					prestmt.setString(1, textPw1.getText());
-					prestmt.setString(2, id);
-					prestmt.setString(3, userName);
-					prestmt.setString(4, mail);
+					conn = cp.getConnection();
+					sql.append("UPDATE user SET pw=? where id=? and username=? and email=?");
+				
+					pstmt = conn.prepareStatement(sql.toString());
+					pstmt.setString(1, textPw1.getText());
+					pstmt.setString(2, id);
+					pstmt.setString(3, userName);
+					pstmt.setString(4, mail);
 					
-					int result = prestmt.executeUpdate();
-					System.out.println("zz");
+					result = pstmt.executeUpdate();
 					if(result == 1) {
 						//frame 종료
 						frame.dispose();
 					}
 					
 				} catch (SQLException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
+				} finally {
+					try {
+						cp.releaseConnection(conn);
+						pstmt.close();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
 		});

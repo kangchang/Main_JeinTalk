@@ -1,4 +1,4 @@
-package test;
+package client;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -17,7 +17,7 @@ import javax.swing.SwingConstants;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import db.DBConnection;
+import db.ConnectionPool;
 
 public class SignUp {
 	
@@ -34,12 +34,7 @@ public class SignUp {
 	private static JLabel SignlblNewLabel_6;
 	public int CheckResult = 0;
 	
-	DBConnection dbconn = new DBConnection();
-	Connection conn = dbconn.getConnection();
-	PreparedStatement pstmt = null;
-	StringBuffer sql = null;
-	
-	public void Singup() {
+	public void Singup(ConnectionPool cp) {
 		
 		Signframe = new JFrame();
 		Signframe.setBounds(100, 100, 720, 555);
@@ -120,19 +115,20 @@ public class SignUp {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				Connection conn = null;
+				PreparedStatement pstmt = null;
+				StringBuffer sql = new StringBuffer();
+				ResultSet result = null;
 				try {
-					sql = new StringBuffer();
+					conn = cp.getConnection();
 					sql.append("SELECT id FROM user WHERE id=?");
-					
 					pstmt = conn.prepareStatement(sql.toString());
-					
 					pstmt.setString(1, SigntextField_1.getText());
+					result = pstmt.executeQuery();
 					
-					ResultSet result = pstmt.executeQuery();
 					CheckResult = 0;
 					
 					while(result.next()) {
-						System.out.println(result.getString("id"));
 						CheckResult = 1;
 					}
 					if(CheckResult == 1) {
@@ -142,8 +138,17 @@ public class SignUp {
 						SigntextField_1.setForeground(Color.green);
 						SignlblNewLabel_6.setText("사용가능한 ID입니다.");
 					}
+					
 				} catch (SQLException exc) {
 					exc.printStackTrace();
+				} finally {
+					try {
+						cp.releaseConnection(conn);
+						pstmt.close();
+						result.close();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
             
@@ -170,7 +175,7 @@ public class SignUp {
 			public void changedUpdate(DocumentEvent e) {
 				Check();
 			}
-			
+			// 전체 입력 확인
 			public void Check() {
 				if(CheckResult == 0 && SigntextField_3.getText().equals(SigntextField_4.getText()) && !SigntextField.getText().equals("") && !SigntextField_1.getText().equals("") && !SigntextField_2.getText().equals("") && !SigntextField_3.getText().equals("") && !SigntextField_4.getText().equals("")) {
 					SignbtnNewButton_1.setEnabled(true);
@@ -184,22 +189,32 @@ public class SignUp {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				Connection conn = null;
+				PreparedStatement pstmt = null;
+				StringBuffer sql = new StringBuffer();
 				try {
-					sql = new StringBuffer();
+					conn = cp.getConnection();
 					sql.append("INSERT INTO user(id, pw, username, email, flag) VALUES(?,?,?,?,?)");
 					pstmt = conn.prepareStatement(sql.toString());
-					
 					pstmt.setString(1, SigntextField_1.getText());
 					pstmt.setString(2, SigntextField_3.getText());
 					pstmt.setString(3, SigntextField.getText());
 					pstmt.setString(4, SigntextField_2.getText());
 					pstmt.setInt(5, 0);
 					
-					int result = pstmt.executeUpdate();
+					pstmt.executeUpdate();
 					
 					Signframe.dispose();
+					
 				} catch (SQLException exc) {
 					exc.printStackTrace();
+				} finally {
+					try {
+						cp.releaseConnection(conn);
+						pstmt.close();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
 				}
 			}
             
