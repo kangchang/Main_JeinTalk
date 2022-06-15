@@ -1,7 +1,9 @@
 package db;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
 
 public final class ConnectionPool {
 	

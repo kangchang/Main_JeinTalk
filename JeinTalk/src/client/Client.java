@@ -36,7 +36,7 @@ public class Client {
 	
 
 	public static void main(String[] args) throws SQLException {
-		ConnectionPool cp = ConnectionPool.getInstance("jdbc:mariadb://192.168.0.211:3306/jeintalk", "root", "root", 5, 10);
+		ConnectionPool cp = ConnectionPool.getInstance("jdbc:mariadb://192.168.0.227:3306/jeintalk", "root", "245134", 5, 10);
 		
 		
 		// =====================================Swing=====================================
