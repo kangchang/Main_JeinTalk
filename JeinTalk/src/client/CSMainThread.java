@@ -1,28 +1,36 @@
 package client;
 
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import javax.swing.JLabel;
 
 public class CSMainThread extends Thread {
 
 	private ServerSocket server_socket = null;
-	private CSOutputthread output;
-	private CSInputThread input;
+	private CSOutputthread output = null;
+	private CSInputThread input = null;
 	private String ip;
 	private String port;
-	
+	private JLabel exlblipLabe;
+	private JLabel exlblportLabe;
+
 	public CSMainThread(String IP, String Port) {
 		this.ip = IP;
 		this.port = Port;
 	}
-	
+
 	public CSMainThread(String port) {
 		this.port = port;
+	}
+
+	public void setexlblipLabe(JLabel exlblipLabe) {
+		this.exlblipLabe = exlblipLabe;
+	}
+
+	public void setexlblportLabe(JLabel exlblportLabe) {
+		this.exlblportLabe = exlblportLabe;
 	}
 
 	@Override
@@ -32,7 +40,6 @@ public class CSMainThread extends Thread {
 			ChatRoom.exTextArea.append("서버를 실행하였습니다.\n");
 
 			Socket client_socket = server_socket.accept();
-			System.out.println("접속자 : " + client_socket.getInetAddress());
 			output = new CSOutputthread(client_socket, ChatRoom.name, ChatRoom.exTextArea2, ChatRoom.exTextArea,
 					ChatRoom.jButton, ChatRoom.exScrollPane);
 			output.start();
@@ -40,12 +47,15 @@ public class CSMainThread extends Thread {
 			input.start();
 
 		} catch (IOException IOE2) {
-			IOE2.printStackTrace();
+			exlblipLabe.setText("IP 오류");
+			exlblportLabe.setText("Port 오류");
 		} finally {
 			try {
-				input.interrupt();
-				output.interrupt();
-				server_socket.close();
+				if (input != null && output != null && server_socket != null) {
+					input.interrupt();
+					output.interrupt();
+					server_socket.close();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

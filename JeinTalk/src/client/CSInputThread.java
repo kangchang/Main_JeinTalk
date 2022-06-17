@@ -27,7 +27,6 @@ public class CSInputThread extends Thread {
 
 	@Override
 	public void run() {
-		System.out.println("222");
 		while (true) {
 			try {
 				userto = (String) thr_in_socket.readObject();
@@ -37,7 +36,9 @@ public class CSInputThread extends Thread {
 
 			} catch (IOException e) {
 				try {
-					thr_in_socket.close();
+					if ( thr_in_socket != null) {
+						thr_in_socket.close();
+					}
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}

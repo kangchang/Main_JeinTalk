@@ -1,5 +1,6 @@
 package client;
 
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -7,7 +8,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.sql.Connection;
@@ -30,9 +30,9 @@ import db.ConnectionPool;
 public class ChatRoom {
 	private String server_IP;
 	private int server_PORT;
-	
+
 	private CSOutputthread threadout;
-	CSInputThread threadin;
+	private CSInputThread threadin;
 
 	// private static JFrame jFrameList = new JFrame("참여자 리스트");
 	private static JTextArea jFrameListTextArea = new JTextArea();
@@ -42,7 +42,7 @@ public class ChatRoom {
 	protected static JTextArea exTextArea;
 	protected static JButton jButton;
 	protected static JTextArea exTextArea2;
-	protected static JScrollPane exScrollPane;	//+버튼 스크롤 채팅창
+	protected static JScrollPane exScrollPane; // +버튼 스크롤 채팅창
 	protected static JFrame exFrame;
 	protected static JScrollPane scrollPane2;
 
@@ -83,42 +83,15 @@ public class ChatRoom {
 
 	public void runChatRoom() throws SQLException {
 		try {
+			
+			
 			// =====================================Swing=====================================
 			JFrame jframe = new JFrame(name + " " + loginDate);
 			jframe.setBounds(100, 100, 1120, 600);
-			// jframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			jframe.getContentPane().setLayout(null);
 			jframe.setLocationRelativeTo(null);
 			jframe.setResizable(false);
 			jframe.setVisible(true);
-
-			// X 채팅프로그램 종료 이벤트
-			jframe.addWindowListener(new WindowAdapter() {
-				public void windowClosing(WindowEvent e) {
-					Connection conn = null;
-					PreparedStatement pstmt = null;
-					StringBuffer sql = new StringBuffer();
-					try {
-						conn = cp.getConnection();
-						sql.append("UPDATE user SET flag=0 WHERE id=?");
-						pstmt = conn.prepareStatement(sql.toString());
-						pstmt.setString(1, id);
-						pstmt.executeUpdate();
-
-						jframe.dispose();
-					} catch (SQLException exc) {
-						exc.printStackTrace();
-					} finally {
-						try {
-							cp.releaseConnection(conn);
-							pstmt.close();
-							System.exit(0);
-						} catch (SQLException e1) {
-							e1.printStackTrace();
-						}
-					}
-				}
-			});
 
 			JTextArea textArea1 = new JTextArea();
 			textArea1.setBounds(45, 10, 690, 387);
@@ -208,7 +181,6 @@ public class ChatRoom {
 					try {
 						Uframe = new JFrame();
 						Uframe.setBounds(100, 100, 720, 555);
-						Uframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 						Uframe.getContentPane().setLayout(null);
 						Uframe.setResizable(false);
 						Uframe.setVisible(true);
@@ -424,36 +396,6 @@ public class ChatRoom {
 			btnNewButton_1_1.setBounds(188, 7, 131, 23);
 			jframe.getContentPane().add(btnNewButton_1_1);
 
-			btnNewButton_1_1.addActionListener(new ActionListener() {
-				Connection conn = cp.getConnection();
-				PreparedStatement pstmt = null;
-				StringBuffer sql = new StringBuffer();
-
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					try {
-						sql.append("UPDATE user SET flag=0 WHERE id=?");
-						pstmt = conn.prepareStatement(sql.toString());
-						pstmt.setString(1, id);
-						pstmt.executeUpdate();
-
-						jframe.dispose();
-						Client.textField.setText("");
-						Client.textField_1.setText("");
-						Client.frame.setVisible(true);
-					} catch (SQLException exc) {
-						exc.printStackTrace();
-					} finally {
-						try {
-							cp.releaseConnection(conn);
-							pstmt.close();
-						} catch (SQLException e1) {
-							e1.printStackTrace();
-						}
-					}
-				}
-			});
-
 			JLabel lblNewLabe01 = new JLabel("온라인");
 			lblNewLabe01.setFont(new Font("굴림", Font.PLAIN, 14));
 			lblNewLabe01.setBounds(773, 55, 81, 17);
@@ -465,12 +407,27 @@ public class ChatRoom {
 			jframe.getContentPane().add(lblNewLabe02);
 
 			// 1:1 채팅 기능
-			
-			JTextField exInputIPTextField = new JTextField("127.168.0.###");
+			JLabel exlblipLabe = new JLabel("IP 입력");
+			exlblipLabe.setFont(new Font("굴림", Font.PLAIN, 10));
+			exlblipLabe.setBounds(440, 30, 108, 23);
+			jframe.getContentPane().add(exlblipLabe);
+
+			JLabel exlblportLabe = new JLabel("포트 입력");
+			exlblportLabe.setFont(new Font("굴림", Font.PLAIN, 10));
+			exlblportLabe.setBounds(440, 53, 108, 23);
+			jframe.getContentPane().add(exlblportLabe);
+
+			JLabel exlblerrorLabe = new JLabel("");
+			exlblerrorLabe.setFont(new Font("굴림", Font.PLAIN, 10));
+			exlblerrorLabe.setBounds(520, 15, 108, 23);
+			exlblerrorLabe.setForeground(Color.RED);
+			jframe.getContentPane().add(exlblerrorLabe);
+
+			JTextField exInputIPTextField = new JTextField("192.168.0.###");
 			exInputIPTextField.setBounds(520, 30, 108, 23);
 			exInputIPTextField.setColumns(10);
 			jframe.getContentPane().add(exInputIPTextField);
-			
+
 			JTextField exInputPortTextField = new JTextField("0000");
 			exInputPortTextField.setBounds(520, 53, 108, 23);
 			exInputPortTextField.setColumns(10);
@@ -500,7 +457,7 @@ public class ChatRoom {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					String strExPortName = exInputPortTextField.getText(); // 1:1 채팅방 초대 유저 이름
-					
+
 					exFrame = new JFrame("포트 " + strExPortName + "번 1:1 채팅방.");
 					exFrame.setBounds(100, 100, 650, 480);
 					exFrame.setLocationRelativeTo(null);
@@ -541,11 +498,13 @@ public class ChatRoom {
 					jButton.setBounds(482, 294, 142, 128);
 					exFrame.getContentPane().add(jButton);
 					exFrame.setVisible(true);
-					
+
 					// 서버 시작
 					CSMainThread test = new CSMainThread(strExPortName);
+					test.setexlblipLabe(exlblipLabe);
+					test.setexlblportLabe(exlblportLabe);
 					test.start();
-					
+
 					// X버튼으로 채팅프로그램 종료 이벤트
 					exFrame.addWindowListener((WindowListener) new WindowAdapter() {
 						public void windowClosing(WindowEvent e) {
@@ -564,76 +523,84 @@ public class ChatRoom {
 					String strExUserName = exInputIPTextField.getText(); // 1:1 채팅방 초대 유저 이름
 					String strExPortName = exInputPortTextField.getText(); // 1:1 채팅방 초대 유저 이름
 
-					exFrame = new JFrame("포트 " + strExUserName + "번 1:1 채팅방.");
-					exFrame.setBounds(100, 100, 650, 480);
-					exFrame.setLocationRelativeTo(null);
-					exFrame.setResizable(false);
-					exFrame.getContentPane().setLayout(null);
-
-					// 채팅창
-					exTextArea = new JTextArea();
-					exTextArea.setLineWrap(true);
-					exTextArea.setBounds(12, 10, 612, 262);
-					exTextArea.setWrapStyleWord(true);
-					exTextArea.setEditable(false);
-
-					exScrollPane = new JScrollPane(exTextArea);
-					exScrollPane.setBounds(12, 10, 612, 262);
-					exScrollPane.revalidate();
-					exScrollPane.repaint();
-
-					exFrame.getContentPane().add(exScrollPane);
-
-					// 입력창
-					exTextArea2 = new JTextArea();
-					exTextArea2.setLineWrap(true);
-					exTextArea2.setBounds(12, 293, 455, 129);
-					exTextArea2.setWrapStyleWord(true);
-
-					scrollPane2 = new JScrollPane(exTextArea2);
-					scrollPane2.setBounds(12, 293, 455, 129);
-					scrollPane2.revalidate();
-					scrollPane2.repaint();
-
-					exFrame.getContentPane().add(scrollPane2);
-
-					// SEND 버튼
-					jButton = new JButton("SEND");
-					jButton.setFont(new Font("굴림", Font.BOLD, 18));
-					jButton.setBounds(482, 294, 142, 128);
-					exFrame.getContentPane().add(jButton);
-					exFrame.setVisible(true);
-					
-					// 소켓 연결하기			
+					// 소켓 연결하기
 					Socket client;
 					try {
 						client = new Socket(strExUserName, Integer.parseInt(strExPortName));
-						exTextArea.append("개인서버와 연결 되었습니다.\n");
-						threadout = new CSOutputthread(client, name, exTextArea2,
-								exTextArea, jButton, exScrollPane);
-						threadout.start();
-						threadin = new CSInputThread(client, exTextArea, exScrollPane);
-						threadin.start();
-					} catch (UnknownHostException e1) {
-						e1.printStackTrace();
-					} catch (IOException e1) {
-						e1.printStackTrace();
-					}
-					
-					// X버튼으로 채팅프로그램 종료 이벤트
-					exFrame.addWindowListener((WindowListener) new WindowAdapter() {
-						public void windowClosing(WindowEvent e) {
-							exFrame.getContentPane().invalidate();
-							exFrame.getContentPane().validate();
-							exFrame.getContentPane().repaint();
-							threadin.interrupt();
-							threadout.interrupt();
+						if (client.isConnected() == true) {
+							exFrame = new JFrame("포트 " + strExPortName + "번 1:1 채팅방.");
+							exFrame.setBounds(100, 100, 650, 480);
+							exFrame.setLocationRelativeTo(null);
+							exFrame.setResizable(false);
+							exFrame.getContentPane().setLayout(null);
+							exlblerrorLabe.setText("");
+
+							// 채팅창
+							exTextArea = new JTextArea();
+							exTextArea.setLineWrap(true);
+							exTextArea.setBounds(12, 10, 612, 262);
+							exTextArea.setWrapStyleWord(true);
+							exTextArea.setEditable(false);
+
+							exScrollPane = new JScrollPane(exTextArea);
+							exScrollPane.setBounds(12, 10, 612, 262);
+							exScrollPane.revalidate();
+							exScrollPane.repaint();
+
+							exFrame.getContentPane().add(exScrollPane);
+
+							// 입력창
+							exTextArea2 = new JTextArea();
+							exTextArea2.setLineWrap(true);
+							exTextArea2.setBounds(12, 293, 455, 129);
+							exTextArea2.setWrapStyleWord(true);
+
+							scrollPane2 = new JScrollPane(exTextArea2);
+							scrollPane2.setBounds(12, 293, 455, 129);
+							scrollPane2.revalidate();
+							scrollPane2.repaint();
+
+							exFrame.getContentPane().add(scrollPane2);
+
+							// SEND 버튼
+							jButton = new JButton("SEND");
+							jButton.setFont(new Font("굴림", Font.BOLD, 18));
+							jButton.setBounds(482, 294, 142, 128);
+							exFrame.getContentPane().add(jButton);
+							exFrame.setVisible(true);
+							exTextArea.append("개인서버와 연결 되었습니다.\n");
+							threadout = new CSOutputthread(client, name, exTextArea2, exTextArea, jButton, exScrollPane);
+							threadout.start();
+							threadin = new CSInputThread(client, exTextArea, exScrollPane);
+							threadin.start();
+						} else {
+							exlblerrorLabe.setText("다른사람이 접속중입니다.");
 						}
-					});
+
+						if (!exFrame.equals(null)) {
+							// X버튼으로 채팅프로그램 종료 이벤트
+							exFrame.addWindowListener((WindowListener) new WindowAdapter() {
+								public void windowClosing(WindowEvent e) {
+									exFrame.getContentPane().invalidate();
+									exFrame.getContentPane().validate();
+									exFrame.getContentPane().repaint();
+									if (threadin == null && threadout == null) {
+										threadin.interrupt();
+										threadout.interrupt();
+									}
+								}
+							});
+						}
+
+					} catch (UnknownHostException e1) {
+						exlblerrorLabe.setText("IP 및 포트를 확인해 주세요");
+					} catch (IOException e1) {
+
+					}
 				}
 			});
 			// =====================================Swing=====================================
-
+			
 			Socket client = new Socket(server_IP, server_PORT);
 			textArea1.append("서버와 연결 되었습니다.\n");
 			ClientOutputThread threadout = new ClientOutputThread(client, name, textArea2, btnNewButton);
@@ -642,6 +609,71 @@ public class ChatRoom {
 			threadin.start();
 			UserOnOffline useronoffline = new UserOnOffline(cp);
 			useronoffline.start();
+			
+			btnNewButton_1_1.addActionListener(new ActionListener() {
+				Connection conn = cp.getConnection();
+				PreparedStatement pstmt = null;
+				StringBuffer sql = new StringBuffer();
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					try {
+						sql.append("UPDATE user SET flag=0 WHERE id=?");
+						pstmt = conn.prepareStatement(sql.toString());
+						pstmt.setString(1, id);
+						pstmt.executeUpdate();
+						
+						threadout.interrupt();
+						threadin.interrupt();
+						useronoffline.interrupt();
+
+						jframe.dispose();
+						Client.textField.setText("");
+						Client.textField_1.setText("");
+						Client.frame.setVisible(true);
+					} catch (SQLException exc) {
+						exc.printStackTrace();
+					} finally {
+						try {
+							cp.releaseConnection(conn);
+							pstmt.close();
+						} catch (SQLException e1) {
+							e1.printStackTrace();
+						}
+					}
+				}
+			});
+			
+			// X 채팅프로그램 종료 이벤트
+			jframe.addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e) {
+					Connection conn = null;
+					PreparedStatement pstmt = null;
+					StringBuffer sql = new StringBuffer();
+					try {
+						conn = cp.getConnection();
+						sql.append("UPDATE user SET flag=0 WHERE id=?");
+						pstmt = conn.prepareStatement(sql.toString());
+						pstmt.setString(1, id);
+						pstmt.executeUpdate();
+						
+						threadout.interrupt();
+						threadin.interrupt();
+						useronoffline.interrupt();
+						jframe.dispose();
+					} catch (SQLException exc) {
+						exc.printStackTrace();
+					} finally {
+						try {
+							cp.releaseConnection(conn);
+							pstmt.close();
+							System.exit(0);
+						} catch (SQLException e1) {
+							e1.printStackTrace();
+						}
+					}
+				}
+			});
 
 		} catch (Exception e) {
 			e.getStackTrace();

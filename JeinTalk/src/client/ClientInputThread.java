@@ -27,7 +27,6 @@ public class ClientInputThread extends Thread {
 
 	@Override
 	public void run() {
-		System.out.println("222");
 		while (true) {
 			try {
 				userto = (String) thr_in_socket.readObject();

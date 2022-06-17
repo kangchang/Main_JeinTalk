@@ -26,7 +26,7 @@ public class ClientOutputThread extends Thread {
 		this.jButton = jButton;
 		try {
 			thr_out_socket = new ObjectOutputStream(this.socket.getOutputStream());
-			thr_out_socket.writeObject(this.name);
+			thr_out_socket.writeObject(this.name + "님이 접속하였습니다.");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -34,11 +34,10 @@ public class ClientOutputThread extends Thread {
 
 	@Override
 	public void run() {
-		System.out.println("111");
 		jButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if (jTextArea2.getText().equals("") != true) {
+				if (!"".equals(jTextArea2.getText())) {
 					try {
 						message = jTextArea2.getText();
 						user.setMessage(message);
